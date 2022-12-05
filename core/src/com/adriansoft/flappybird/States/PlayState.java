@@ -29,7 +29,7 @@ public class PlayState extends State {
 
     private String Yourscorename = "0";
     private BitmapFont yourbitmapfontname;
-    private Texture background;
+    private Texture background ,score1;
 
 
     private int score = 0;
@@ -40,10 +40,18 @@ public class PlayState extends State {
     private Preferences preferences;
     private int newrecord;
 
+    private String user ,userRecordActual;
+
     public PlayState(GameStateManager gsm) {
         super(gsm);
         preferences = Gdx.app.getPreferences("records");
         newrecord = preferences.getInteger("newrecord",0);
+
+        //OBTENER EL NOMBRE DE USUARIO QUE ESTA JUGANDO
+        user = preferences.getString("user" ,"");
+
+        //USUARIO QUE TIENE EL RECORD ACTUAL
+        userRecordActual = preferences.getString("userActual", "anonimo");
 
         countTube = Gdx.audio.newSound(Gdx.files.internal("moneda.mp3"));
         PerderVida = Gdx.audio.newSound(Gdx.files.internal("perderVida.mp3"));
@@ -53,6 +61,9 @@ public class PlayState extends State {
         background = new Texture   ("bg.png");
         yourbitmapfontname = new BitmapFont();
 
+
+        //TEXTURE PARA SCORE MEJORADO
+        score1 = new Texture("0.png");
 
         bird = new Bird(50 ,320);
         camera.setToOrtho(false , FlappyBird.WIDTH / 2, FlappyBird.HEIGHT / 2);
@@ -87,6 +98,7 @@ public class PlayState extends State {
                 score++;
                 gsm.setScore(score);
                 Yourscorename = "" + score;
+                score1 = new Texture("1.png");
             }
 
             if (tube.collides(bird.getBounds())){
@@ -94,9 +106,14 @@ public class PlayState extends State {
                 if(score > newrecord){
                     preferences.putInteger("newrecord",score);
                     preferences.putInteger("oldrecord", newrecord);
-                    preferences.flush();
-                }else {
 
+                    //COMO EL RECORD ES MAYOR AL ACTUAL NUEVO USUARIO CON NUEVO RECORD
+                    preferences.putString("userActual" ,user);
+                    preferences.flush();
+                }else if(score == newrecord){
+                    preferences.putInteger("newrecord",score);
+                    preferences.putInteger("oldrecord", newrecord);
+                    preferences.flush();
                 }
 
                 gsm.set(new GameOver(gsm));
@@ -111,7 +128,14 @@ public class PlayState extends State {
 
         if (bird.getPosition().y <= ground.getHeight() + GROUND_Y_OFFSET){
             PerderVida.play(0.5f);
-            if(newrecord < score){
+            if(score > newrecord){
+                preferences.putInteger("newrecord",score);
+                preferences.putInteger("oldrecord", newrecord);
+
+                //COMO EL RECORD ES MAYOR AL ACTUAL NUEVO USUARIO CON NUEVO RECORD
+                preferences.putString("userActual" ,user);
+                preferences.flush();
+            }else if(score == newrecord){
                 preferences.putInteger("newrecord",score);
                 preferences.putInteger("oldrecord", newrecord);
                 preferences.flush();
@@ -128,8 +152,10 @@ public class PlayState extends State {
     public void render(SpriteBatch spriteBatch) {
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
+
         spriteBatch.draw(background ,camera.position.x - (camera.viewportWidth / 2), 0 );
         spriteBatch.draw(bird.getTexture() ,bird.getPosition().x , bird.getPosition().y);
+
         for (Tube tube: tubes)
         {
             spriteBatch.draw(tube.getTopTube(), tube.getPosTopTube().x, tube.getPosTopTube().y);
@@ -142,6 +168,8 @@ public class PlayState extends State {
         yourbitmapfontname.setColor(1.0f,1.0f,1.0f,1.0f);
         yourbitmapfontname.getData().setScale(2,2);
         yourbitmapfontname.draw(spriteBatch,Yourscorename,camera.position.x - (camera.viewportWidth/2) ,camera.position.y + (FlappyBird.HEIGHT / 4));
+
+        //spriteBatch.draw(score1,camera.position.x - (camera.viewportWidth/2) ,camera.position.y + (FlappyBird.HEIGHT / 4));
         spriteBatch.end();
     }
 
